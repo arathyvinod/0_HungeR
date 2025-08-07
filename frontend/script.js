@@ -1,27 +1,41 @@
-async function sendMessage() {
-    const input = document.getElementById("user-input").value;
-    const chatBox = document.getElementById("chat-box");
-    chatBox.innerHTML += `<div class='user'>You: ${input}</div>`;
+document.addEventListener("DOMContentLoaded", () => {
+  const sendBtn = document.getElementById("send-btn");
+  sendBtn.addEventListener("click", sendMessage);
+});
 
-    let response = "I didn't understand that.";
+function sendMessage() {
+  const userInput = document.getElementById("user-input");
+  const message = userInput.value.trim();
 
-    if (input.toLowerCase().includes("planting tips")) {
-        const crop = prompt("Which crop? (e.g., Rice, Wheat, Tomato)");
-        const res = await fetch(`/planting-tips?crop=${crop}`);
-        const data = await res.json();
-        response = data.tip;
-    } else if (input.toLowerCase().includes("weather")) {
-        const city = prompt("Enter your city:");
-        const res = await fetch(`/weather?city=${city}`);
-        const data = await res.json();
-        response = data.error ? data.error : `Temperature: ${data.temperature}, ${data.description}`;
-    } else if (input.toLowerCase().includes("suggest crop")) {
-        const season = prompt("Which season? (Kharif, Rabi, Zaid)");
-        const res = await fetch(`/crop-suggestion?season=${season}`);
-        const data = await res.json();
-        response = `Suggested Crops: ${data.suggested_crops}`;
-    }
+  if (message === "") return;
 
-    chatBox.innerHTML += `<div class='bot'>Bot: ${response}</div>`;
-    document.getElementById("user-input").value = "";
+  appendMessage("You", message);
+  userInput.value = "";
+
+  fetch("http://127.0.0.1:8000/chat", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ message })
+  })
+  .then(response => response.json())
+  .then(data => {
+    appendMessage("Bot", data.reply);
+  })
+  .catch(error => {
+    console.error("Error:", error);
+    appendMessage("Bot", "Sorry, something went wrong.");
+  });
 }
+
+function appendMessage(sender, message) {
+  const chatBox = document.getElementById("chat-box");
+  const messageElement = document.createElement("div");
+  messageElement.innerHTML = `<strong>${sender}:</strong> ${message}`;
+  chatBox.appendChild(messageElement);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+
+

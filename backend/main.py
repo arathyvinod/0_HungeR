@@ -1,35 +1,32 @@
-from fastapi import FastAPI
-import requests
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-API_KEY = "YOUR_OPENWEATHERMAP_API_KEY"  # Replace with your API key
+# Enable CORS to allow requests from frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # You can specify frontend origin instead of "*"
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@app.get("/planting-tips")
-def get_planting_tips(crop: str = "general"):
-    tips = {
-        "rice": "Ensure proper puddling of soil and maintain 5cm water level.",
-        "wheat": "Sow seeds at a depth of 5 cm and apply basal fertilizer.",
-        "tomato": "Use raised beds and provide staking for plants.",
-        "general": "Prepare soil well and ensure timely watering."
-    }
-    return {"tip": tips.get(crop.lower(), tips["general"])}
+@app.post("/chat")
+async def chat(request: Request):
+    data = await request.json()
+    user_message = data.get("message", "")
 
-@app.get("/weather")
-def get_weather(city: str):
-    url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}"
-    response = requests.get(url).json()
-    if response.get("main"):
-        temp_c = response["main"]["temp"] - 273.15
-        weather_desc = response["weather"][0]["description"]
-        return {"temperature": f"{temp_c:.2f}°C", "description": weather_desc}
-    return {"error": "City not found"}
+    # Simple response logic
+    if "weather" in user_message.lower():
+        reply = "Today's weather is sunny with a chance of rain."
+    elif "crop" in user_message.lower():
+        reply = "Based on your region, rice and maize are good options."
+    elif "planting" in user_message.lower():
+        reply = "You can start planting in early June for best yield."
+    else:
+        reply = "I can help with planting tips, crop suggestions, and weather updates."
 
-@app.get("/crop-suggestion")
-def crop_suggestion(season: str = "kharif"):
-    crops = {
-        "kharif": "Rice, Maize, Cotton",
-        "rabi": "Wheat, Barley, Mustard",
-        "zaid": "Watermelon, Muskmelon"
-    }
-    return {"suggested_crops": crops.get(season.lower(), "Rice, Wheat")}
+    return {"reply": reply}
+
+
